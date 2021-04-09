@@ -1,0 +1,25 @@
+apiVersion: v1
+entries:
+  mrbs:
+  - apiVersion: v2
+    appVersion: 1.9.2
+    created: "2021-04-09T17:18:08.8460306+02:00"
+    dependencies:
+    - condition: mariadb.enabled
+      name: mariadb
+      repository: https://charts.bitnami.com/bitnami
+      version: 9.x.x
+    - name: common
+      repository: https://charts.bitnami.com/bitnami
+      tags:
+      - bitnami-common
+      version: 1.x.x
+    description: Room booking management system.
+    digest: 385250c68f3e2c87aa4fb32be10534cc837dcb2e63869c405cc3f6203d4f6636
+    icon: https://mrbs.sourceforge.io/images/mrbs.png
+    name: mrbs
+    type: application
+    urls:
+    - https://dasilva2010.github.io/helm/mrbs-0.1.0.tgz
+    version: 0.1.0
+generated: "2021-04-09T17:18:08.82822+02:00"
