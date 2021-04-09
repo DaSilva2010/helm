@@ -1,0 +1,183 @@
+# Default values for mrbs.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+replicaCount: 1
+
+image:
+  repository: dasilva2010/mrbs
+  pullPolicy: IfNotPresent
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: "latest"
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+
+podAnnotations: {}
+
+podSecurityContext: {}
+  # fsGroup: 2000
+
+securityContext: {}
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+  # runAsUser: 1000
+
+service:
+  type: ClusterIP
+  port: 80
+
+ingress:
+  enabled: false
+  annotations: {}
+    # kubernetes.io/ingress.class: nginx
+    # kubernetes.io/tls-acme: "true"
+  hosts:
+    - host: mrbs.local
+      paths: []
+  tls: []
+  #  - secretName: chart-example-tls
+  #    hosts:
+  #      - chart-example.local
+
+resources: {}
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  # limits:
+  #   cpu: 100m
+  #   memory: 128Mi
+  # requests:
+  #   cpu: 100m
+  #   memory: 128Mi
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 100
+  targetCPUUtilizationPercentage: 80
+  # targetMemoryUtilizationPercentage: 80
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+mrbs:
+  adminName: Administrator
+  ## email addresses in the format 'Full Name <address>', for example:
+  ## 'Booking System <admin_email@your.org>'
+  ## if the name section has any "peculiar" characters in it, you will need to put the name in double quotes, e.g.:
+  ## '"Bloggs, Joe" <admin_email@your.org>'
+  adminEmail: root@localhost
+  company: Your Company
+  companyUrl: https://www.example.org
+  users:
+    - name: admin
+      password: supersecret
+    - name: user
+      password: supersecret
+  ## A user name from the user list. Useful
+  administrators:
+    - name: admin
+  ## A list of valid timezones can be found at http://php.net/manual/timezones.php
+  timezone: UTC
+  ## Prefix for table names.  This will allow multiple installations where only one database is available
+  tableprefix: ""
+  ## Start of week: 0 for Sunday, 1 for Monday, etc.
+  startOfWeek: 1
+  ## The beginning of the first slot of the day
+  ## must be integer in range 0-23
+  startOfMorning: 7
+  ## must be integer in range 0-59
+  startOfMorningMinutes: 0
+  ## The beginning of the last slot of the day
+  ## must be integer in range 0-23
+  endOfEvening: 17
+  ## must be integer in range 0-59
+  endOfEveningMinutes: 30
+
+##
+## MariaDB chart configuration
+## ref: https://github.com/bitnami/charts/blob/master/bitnami/mariadb/values.yaml
+##
+mariadb:
+  ## Whether to deploy a mariadb server to satisfy the applications database requirements. To use an external database set this to false and configure the externalDatabase parameters
+  ##
+  enabled: true
+  ## MariaDB architecture. Allowed values: standalone or replication
+  ##
+  architecture: standalone
+  ## MariaDB Authentication parameters
+  ##
+  auth:
+    ## MariaDB root password
+    ## ref: https://github.com/bitnami/bitnami-docker-mariadb#setting-the-root-password-on-first-run
+    ##
+    rootPassword: ""
+    ## MariaDB custom user and database
+    ## ref: https://github.com/bitnami/bitnami-docker-mariadb/blob/master/README.md#creating-a-database-on-first-run
+    ## ref: https://github.com/bitnami/bitnami-docker-mariadb/blob/master/README.md#creating-a-database-user-on-first-run
+    ##
+    database: mrbs
+    username: mrbs
+    password: ""
+  primary:
+    ## Enable persistence using Persistent Volume Claims
+    ## ref: http://kubernetes.io/docs/user-guide/persistent-volumes/
+    ##
+    persistence:
+      enabled: true
+      ## mariadb data Persistent Volume Storage Class
+      ## If defined, storageClassName: <storageClass>
+      ## If set to "-", storageClassName: "", which disables dynamic provisioning
+      ## If undefined (the default) or set to null, no storageClassName spec is
+      ##   set, choosing the default provisioner.  (gp2 on AWS, standard on
+      ##   GKE, AWS & OpenStack)
+      ##
+      # storageClass: "-"
+      accessModes:
+        - ReadWriteOnce
+      size: 8Gi
+
+##
+## External Database Configuration
+##
+## All of these values are only used when mariadb.enabled is set to false
+##
+externalDatabase:
+  ## Database host
+  ##
+  host: localhost
+  ## non-root Username for Wordpress Database
+  ##
+  user: mrbs
+  ## Database password
+  ##
+  password: ""
+  ## Database name
+  ##
+  database: mrbs
+  ## Database port number
+  ##
+  port: 3306
+  ## Use existing secret (ignores previous password)
+  ## must contain key `mariadb-password`
+  ## NOTE: When it's set, the `externalDatabase.password` parameter is ignored
+  ##
+  # existingSecret:

@@ -1,0 +1,146 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ printf "%s" (include "common.names.fullname" .) }}
+  namespace: {{ .Release.Namespace | quote }}
+  labels: {{- include "common.labels.standard" . | nindent 4 }}
+    {{- if .Values.commonLabels }}
+    {{- include "common.tplvalues.render" ( dict "value" .Values.commonLabels "context" $ ) | nindent 4 }}
+    {{- end }}
+  {{- if .Values.commonAnnotations }}
+  annotations: {{- include "common.tplvalues.render" ( dict "value" .Values.commonAnnotations "context" $ ) | nindent 4 }}
+  {{- end }}
+data:
+    config.inc.php: |-
+      <?php // -*-mode: PHP; coding:utf-8;-*-
+      namespace MRBS;
+
+      /**************************************************************************
+       *   MRBS Configuration File
+       *   Configure this file for your site.
+       *   You shouldn't have to modify anything outside this file.
+       *
+       *   This file has already been populated with the minimum set of configuration
+       *   variables that you will need to change to get your system up and running.
+       *   If you want to change any of the other settings in systemdefaults.inc.php
+       *   or areadefaults.inc.php, then copy the relevant lines into this file
+       *   and edit them here.   This file will override the default settings and
+       *   when you upgrade to a new version of MRBS the config file is preserved.
+       **************************************************************************/
+
+      /**********
+       * Timezone
+       **********/
+
+      // The timezone your meeting rooms run in. It is especially important
+      // to set this if you're using PHP 5 on Linux. In this configuration
+      // if you don't, meetings in a different DST than you are currently
+      // in are offset by the DST offset incorrectly.
+      //
+      // Note that timezones can be set on a per-area basis, so strictly speaking this
+      // setting should be in areadefaults.inc.php, but as it is so important to set
+      // the right timezone it is included here.
+      //
+      // When upgrading an existing installation, this should be set to the
+      // timezone the web server runs in.  See the INSTALL document for more information.
+      //
+      // A list of valid timezones can be found at http://php.net/manual/timezones.php
+      // The following line must be uncommented by removing the '//' at the beginning
+      $timezone=getenv('TIMEZONE');
+
+
+      /*******************
+       * Database settings
+       ******************/
+      // Which database system: "pgsql"=PostgreSQL, "mysql"=MySQL
+      $dbsys = "mysql";
+      // Hostname of database server. For pgsql, can use "" instead of localhost
+      // to use Unix Domain Sockets instead of TCP/IP. For mysql "localhost"
+      // tells the system to use Unix Domain Sockets, and $db_port will be ignored;
+      // if you want to force TCP connection you can use "127.0.0.1".
+      $db_host = getenv('MRBS_DB_HOST');
+      // If you need to use a non standard port for the database connection you
+      // can uncomment the following line and specify the port number
+      $db_port = getenv('MRBS_DB_PORT_NUMBER');
+      // Database name:
+      $db_database = getenv('MRBS_DB_NAME');
+      // Schema name.  This only applies to PostgreSQL and is only necessary if you have more
+      // than one schema in your database and also you are using the same MRBS table names in
+      // multiple schemas.
+      //$db_schema = "public";
+      // Database login user name:
+      $db_login = getenv('MRBS_DB_USER');
+      // Database login password:
+      $db_password = getenv('MRBS_DB_PASSWORD');
+      // Prefix for table names.  This will allow multiple installations where only
+      // one database is available
+      $db_tbl_prefix = getenv('MRBS_TABLE_PREFIX');
+      // Set $db_persist to TRUE to use PHP persistent (pooled) database connections.  Note
+      // that persistent connections are not recommended unless your system suffers significant
+      // performance problems without them.   They can cause problems with transactions and
+      // locks (see http://php.net/manual/en/features.persistent-connections.php) and although
+      // MRBS tries to avoid those problems, it is generally better not to use persistent
+      // connections if you can.
+      $db_persist = FALSE;
+
+
+      /* Add lines from systemdefaults.inc.php and areadefaults.inc.php below here
+         to change the default configuration. Do _NOT_ modify systemdefaults.inc.php
+         or areadefaults.inc.php.  */
+
+
+      $auth["type"] = "config";
+      unset($auth["user"]);
+      {{- range .Values.mrbs.users }}
+      $auth["user"][{{ .name | quote }}] = {{ .password | quote }};
+      {{- end }}
+
+      unset($auth["admin"]);          // Include this when copying to config.inc.php
+      {{- range .Values.mrbs.administrators }}
+      $auth["admin"][] = {{ .name | quote }};
+      {{- end }}
+
+      /*********************************
+       * Site identification information
+       *********************************/
+      $mrbs_admin = {{ .Values.mrbs.adminName | quote }};
+      $mrbs_admin_email = {{ .Values.mrbs.adminEmail | quote }};
+      // NOTE:  there are more email addresses in $mail_settings below.    You can also give
+      // email addresses in the format 'Full Name <address>', for example:
+      // $mrbs_admin_email = 'Booking System <admin_email@your.org>';
+      // if the name section has any "peculiar" characters in it, you will need
+      // to put the name in double quotes, e.g.:
+      // $mrbs_admin_email = '"Bloggs, Joe" <admin_email@your.org>';
+
+      // The company name is mandatory.   It is used in the header and also for email notifications.
+      // The company logo, additional information and URL are all optional.
+
+      $mrbs_company = {{ .Values.mrbs.company | quote }}; // This line must always be uncommented ($mrbs_company is used in various places)
+
+      // Uncomment this next line to use a logo instead of text for your organisation in the header
+      //$mrbs_company_logo = "your_logo.gif";    // name of your logo file.   This example assumes it is in the MRBS directory
+
+      // Uncomment this next line for supplementary information after your company name or logo
+      //$mrbs_company_more_info = "You can put additional information here";  // e.g. "XYZ Department"
+
+      // Uncomment this next line to have a link to your organisation in the header
+      $mrbs_company_url = {{ .Values.mrbs.companyUrl | quote }};
+
+      // This is to fix URL problems when using a proxy in the environment.
+      // If links inside MRBS appear broken, then specify here the URL of
+      // your MRBS root directory, as seen by the users. For example:
+      // $url_base =  "http://www.example.org/mrbs";
+      // It is also recommended that you set this if you intend to use email
+      // notifications, to ensure that the correct URL is displayed in the
+      // notification.
+
+      // Start of week: 0 for Sunday, 1 for Monday, etc.
+      $weekstarts = {{ .Values.mrbs.startOfWeek }};
+
+      // The beginning of the first slot of the day (DEFAULT VALUES FOR NEW AREAS)
+      $morningstarts         = {{ .Values.mrbs.startOfMorning }};   // must be integer in range 0-23
+      $morningstarts_minutes = {{ .Values.mrbs.startOfMorningMinutes }};   // must be integer in range 0-59
+
+      // The beginning of the last slot of the day (DEFAULT VALUES FOR NEW AREAS)
+      $eveningends           = {{ .Values.mrbs.endOfEvening }};  // must be integer in range 0-23
+      $eveningends_minutes   = {{ .Values.mrbs.endOfEveningMinutes }};   // must be integer in range 0-59

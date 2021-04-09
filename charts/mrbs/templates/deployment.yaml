@@ -1,0 +1,88 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "mrbs.fullname" . }}
+  labels:
+    {{- include "mrbs.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "mrbs.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "mrbs.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "mrbs.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 80
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+          env:
+            - name: MRBS_DB_HOST
+              value: {{ include "mrbs.databaseHost" . | quote }}
+            - name: MRBS_DB_PORT_NUMBER
+              value: {{ include "mrbs.databasePort" . | quote }}
+            - name: MRBS_DB_NAME
+              value: {{ include "mrbs.databaseName" . | quote }}
+            - name: MRBS_DB_USER
+              value: {{ include "mrbs.databaseUser" . | quote }}
+            - name: MRBS_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "mrbs.databaseSecretName" . }}
+                  key: mariadb-password
+            - name: MRBS_TABLE_PREFIX
+              value: {{ .Values.mrbs.tableprefix | quote }}
+            - name: TIMEZONE
+              value: {{ .Values.mrbs.timezone | quote }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            - name: mrbs-config
+              mountPath: /var/www/html/config.inc.php
+              subPath: config.inc.php
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      volumes:
+        - name: mrbs-config
+          configMap:
+            name: {{ printf "%s" (include "common.names.fullname" .) }}
+            defaultMode: 0755
